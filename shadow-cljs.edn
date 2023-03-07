@@ -1,0 +1,15 @@
+; use deps.edn with the :shadow alias
+{:deps {:aliases [:shadow]}
+
+ :builds
+ {:app
+  {:target      :esm
+   :output-dir  "public/js"
+   :runtime     :custom
+   ; write the manifest.json file
+   :build-hooks [(com.mjdowney.rendergpt.build/manifest)]
+   ; leave shared :entries empty to let the compiler figure it out
+   :modules     {:shared  {:entries []}
+                 ; The main content script that's injected to https://chat.openai.com/chat
+                 :rendergpt {:init-fn    com.mjdowney.rendergpt/init
+                             :depends-on #{:shared}}}}}}

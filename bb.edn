@@ -1,0 +1,6 @@
+{:tasks
+ {dev {:doc      "Launch the dev environment."
+       :requires ([babashka.fs :as fs])
+       :task     (do
+                   (fs/delete-tree "public/js")
+                   (shell "npx shadow-cljs watch :app"))}}}
