@@ -1,13 +1,6 @@
 (ns com.mjdowney.rendergpt
   (:require [crate.core :as crate]))
 
-(defn inject-stylesheet [href]
-  (let [link (js/document.createElement "link")]
-    (set! (.-rel link) "stylesheet")
-    (set! (.-type link) "text/css")
-    (set! (.-href link) href)
-    (.appendChild (.-head js/document) link)))
-
 (defn build-render-button []
   (crate/html [:button.flex.ml-auto.gap-2 "Render"]))
 
@@ -30,21 +23,45 @@
     (.appendChild (.-parentElement code-block-ele) new-ele)))
 
 (defn iframe [srcdoc]
-  (let [width (/ (.-clientWidth (.-body js/document)) 2)
-        height (/ (.-clientHeight (.-body js/document)) 2)]
-    (crate/html
-      [:iframe
-       {:srcdoc srcdoc
-        :style {:position "fixed"
-                :top "50%"
-                :left "50%"
-                :width (str width "px")
-                :height (str height "px")
-                :transform "translate(-50%, -50%)"
-                :border "1px solid steelblue"
-                :border-radius "5px"
-                :background-color "white"}}])))
+  (crate/html
+    [:div.p4.overflow-y-auto {:style {:min-height "500px" :display "none"}}
+     [:iframe
+      {:srcdoc srcdoc
+       :style {:position "relative"
+               :width "100%"
+               :min-height "500px"
+               :border "1px solid steelblue"
+               :border-radius "5px"
+               :background-color "white"}}]]))
 
+(defn create-rendered-iframe [ele]
+  (let [src-code (code-block-source ele)
+        f (iframe (code-block-source ele))]
+    (js/console.log "Code:" src-code)
+    (.appendChild ele f)
+    f))
+
+(defn toggle-render-fn [ele render-button]
+  (let [rendered? (atom false)
+        hide! (fn [e] (set! (-> e .-style .-display) "none"))
+        show! (fn [e] (set! (-> e .-style .-display) "block"))]
+    (fn [_e]
+      (let [children (.-children ele)
+            content (aget children 1)
+            rendered-iframe (if (>= (.-length children) 3)
+                              (aget children 2)
+                              (create-rendered-iframe ele))]
+        (if @rendered?
+          (do
+            (hide! rendered-iframe)
+            (show! content)
+            (set! (.-innerText render-button) "Render"))
+          (do
+            (hide! content)
+            (show! rendered-iframe)
+            (set! (.-innerText render-button) "Source")))
+
+        (reset! rendered? (not @rendered?))))))
 
 (defn on-mutation [mutation-records _observer]
   (js/console.log "Mutation observed" mutation-records)
@@ -52,12 +69,9 @@
     (when (= (code-block-type ele) "html")
       (set-code-block-type! ele "html+")
 
-      (let [render-button (build-render-button)]
-        (.addEventListener render-button "click"
-          (fn [_e]
-            (js/console.log "Code:" (code-block-source ele))
-            (.appendChild js/document.body (iframe (code-block-source ele)))))
-
+      (let [render-button (build-render-button)
+            toggle-render (toggle-render-fn ele render-button)]
+        (.addEventListener render-button "click" toggle-render)
         (add-to-code-block-title-bar! ele render-button)))))
 
 (defn register-on-mutation [f]
@@ -65,6 +79,11 @@
     (.observe observer
       (.-body js/document)
       #js {:childList true :subtree true})))
+
+(defn inject-stylesheet [href]
+  (.appendChild js/document.head
+    (crate/html
+      [:link {:rel "stylesheet" :type "text/css" :href href}])))
 
 (defn init []
   (inject-stylesheet (js/chrome.runtime.getURL "rendergpt.css"))
