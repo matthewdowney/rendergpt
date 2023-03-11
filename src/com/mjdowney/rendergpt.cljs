@@ -1,8 +1,25 @@
 (ns com.mjdowney.rendergpt
-  (:require [crate.core :as crate]))
+  (:require [crate.core :as crate]
+            [reagent.dom :as rdom]
+            [reagent.core :as r]
+            ["react-multi-select-component" :refer (MultiSelect)]))
 
 (defn build-render-button []
   (crate/html [:button.flex.ml-auto.gap-2 "Render"]))
+
+(defn render-dropdown []
+  (let [selected (r/atom [])]
+    (fn []
+      [:> MultiSelect
+       {:options (clj->js
+                   [{:label "Option 1" :value "option1"}
+                    {:label "Option 2" :value "option2"}
+                    {:label "Option 3" :value "option3"}])
+        :className "dark"
+        :hasSelectAll false
+        :disableSearch true
+        :onChange (fn [e] (js/console.log "Selected:" (reset! selected (js->clj e))))
+        :value @selected}])))
 
 (defn get-gpt-response-code-blocks []
   (js/document.getElementsByClassName "bg-black mb-4 rounded-md"))
@@ -72,7 +89,19 @@
       (let [render-button (build-render-button)
             toggle-render (toggle-render-fn ele render-button)]
         (.addEventListener render-button "click" toggle-render)
-        (add-to-code-block-title-bar! ele render-button)))))
+        (add-to-code-block-title-bar! ele render-button))
+
+      (let [render-dropdown-div (crate/html [:div.rendergpt-dropdown])
+            #_#_render-dropdown (render-dropdown)
+            #_#_select-ele (second (.-children render-dropdown))]
+        #_(.addEventListener (first (.-children render-dropdown)) "click"
+          (fn [_e]
+            (set! (.-display (.-style select-ele))
+              (if (= (.-display (.-style select-ele)) "none")
+                "block"
+                "none"))))
+        (add-to-code-block-title-bar! ele render-dropdown-div)
+        (rdom/render [render-dropdown] render-dropdown-div)))))
 
 (defn register-on-mutation [f]
   (let [observer (js/MutationObserver. f)]

@@ -1,1 +1,14 @@
-/* TODO */
+.rmsc.dark {
+    --rmsc-main: #4285f4;
+    --rmsc-hover: #0e0c0a;
+    --rmsc-selected: #1d1915;
+    --rmsc-border: #333333;
+    --rmsc-gray: #555555;
+    --rmsc-bg: #343540;
+    color: #fff;
+}
+
+.rendergpt-dropdown {
+    margin-left: 1em;
+    width: 130px;
+}
