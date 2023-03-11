@@ -4,22 +4,8 @@
             [reagent.core :as r]
             ["react-multi-select-component" :refer (MultiSelect)]))
 
-(defn build-render-button []
-  (crate/html [:button.flex.ml-auto.gap-2 "Render"]))
-
-(defn render-dropdown []
-  (let [selected (r/atom [])]
-    (fn []
-      [:> MultiSelect
-       {:options (clj->js
-                   [{:label "Option 1" :value "option1"}
-                    {:label "Option 2" :value "option2"}
-                    {:label "Option 3" :value "option3"}])
-        :className "dark"
-        :hasSelectAll false
-        :disableSearch true
-        :onChange (fn [e] (js/console.log "Selected:" (reset! selected (js->clj e))))
-        :value @selected}])))
+;;; (1) Helpers to scan the page for code blocks in ChatGPT responses, read
+;;; their source code, and add elements to their title bars.
 
 (defn get-gpt-response-code-blocks []
   (js/document.getElementsByClassName "bg-black mb-4 rounded-md"))
@@ -39,24 +25,50 @@
     (.insertBefore (.-parentNode existing-button) new-ele existing-button)
     (.appendChild (.-parentElement code-block-ele) new-ele)))
 
-(defn iframe [srcdoc]
-  (crate/html
-    [:div.p4.overflow-y-auto {:style {:min-height "500px" :display "none"}}
-     [:iframe
-      {:srcdoc srcdoc
-       :style {:position "relative"
-               :width "100%"
-               :min-height "500px"
-               :border "1px solid steelblue"
-               :border-radius "5px"
-               :background-color "white"}}]]))
+;;; (2) A React component replacing the code block contents with an iframe for
+;;; displaying the result of evaling / rendering the code.
 
-(defn create-rendered-iframe [ele]
-  (let [src-code (code-block-source ele)
-        f (iframe (code-block-source ele))]
+(defn sources-dropdown
+  "A multi-select dropdown for selecting which of ChatGPT's code sources to
+  include, beyond the selected code block."
+  []
+  (let [selected (r/atom [])]
+    (fn []
+      [:> MultiSelect
+       {:options (clj->js
+                   [{:label "Option 1" :value "option1"}
+                    {:label "Option 2" :value "option2"}
+                    {:label "Option 3" :value "option3"}])
+        :overrideStrings #js {:selectSomeItems "Sources..."
+                              :allItemsAreSelected "All sources selected"}
+        :className "dark"
+        :hasSelectAll false
+        :disableSearch true
+        :onChange (fn [e] (js/console.log "Selected:" (reset! selected (js->clj e))))
+        :value @selected}])))
+
+(defn rendergpt [srcdoc]
+  [:div.p4.overflow-y-auto.font-sans {:style {:min-height "500px"}}
+   [sources-dropdown]
+   [:iframe
+    {:srcDoc srcdoc
+     :style {:position "relative"
+             :width "100%"
+             :min-height "500px"
+             :border "1px solid steelblue"
+             :border-radius "5px"
+             :background-color "white"}}]])
+
+;;; (3) Vanilla JS to add a button element to each code block which injects the
+;;; above react component.
+
+(defn create-rendergpt-ele [parent]
+  (let [src-code (code-block-source parent)
+        container (crate/html [:div {:style {:display "none"}}])]
     (js/console.log "Code:" src-code)
-    (.appendChild ele f)
-    f))
+    (.appendChild parent container)
+    (rdom/render [rendergpt src-code] container)
+    container))
 
 (defn toggle-render-fn [ele render-button]
   (let [rendered? (atom false)
@@ -65,17 +77,17 @@
     (fn [_e]
       (let [children (.-children ele)
             content (aget children 1)
-            rendered-iframe (if (>= (.-length children) 3)
-                              (aget children 2)
-                              (create-rendered-iframe ele))]
+            rgpt (if (>= (.-length children) 3)
+                   (aget children 2)
+                   (create-rendergpt-ele ele))]
         (if @rendered?
           (do
-            (hide! rendered-iframe)
+            (hide! rgpt)
             (show! content)
             (set! (.-innerText render-button) "Render"))
           (do
             (hide! content)
-            (show! rendered-iframe)
+            (show! rgpt)
             (set! (.-innerText render-button) "Source")))
 
         (reset! rendered? (not @rendered?))))))
@@ -86,22 +98,10 @@
     (when (= (code-block-type ele) "html")
       (set-code-block-type! ele "html+")
 
-      (let [render-button (build-render-button)
+      (let [render-button (crate/html [:button.flex.ml-auto.gap-2 "Render"])
             toggle-render (toggle-render-fn ele render-button)]
         (.addEventListener render-button "click" toggle-render)
-        (add-to-code-block-title-bar! ele render-button))
-
-      (let [render-dropdown-div (crate/html [:div.rendergpt-dropdown])
-            #_#_render-dropdown (render-dropdown)
-            #_#_select-ele (second (.-children render-dropdown))]
-        #_(.addEventListener (first (.-children render-dropdown)) "click"
-          (fn [_e]
-            (set! (.-display (.-style select-ele))
-              (if (= (.-display (.-style select-ele)) "none")
-                "block"
-                "none"))))
-        (add-to-code-block-title-bar! ele render-dropdown-div)
-        (rdom/render [render-dropdown] render-dropdown-div)))))
+        (add-to-code-block-title-bar! ele render-button)))))
 
 (defn register-on-mutation [f]
   (let [observer (js/MutationObserver. f)]
