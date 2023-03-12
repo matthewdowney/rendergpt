@@ -1,3 +1,45 @@
+/* Extra "Copy code" button for the combined source */
+.checkmark {
+    position: absolute;
+    color: greenyellow;
+    top: 50%;
+    left: -8%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+div.rendergpt button.copy-code {
+    position: relative;
+    font-size: 0.65em;
+    color: #d1d5db;
+    float: right;
+    display: block;
+    bottom: 5px;
+    right: -10px;
+}
+
+div.rendergpt button.copy-code:focus > .checkmark {
+    opacity: 1;
+    animation: fade-out 3s linear forwards;
+}
+
+@keyframes fade-out {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+/* Contain a dropdown + a tooltip */
+.flex { display: flex; }
+div.dropdown-container { width: 100%; }
+
 /* React multi select component dropdown to get code blocks to render */
 .rendergpt span.tooltip,
 .rmsc.dark {

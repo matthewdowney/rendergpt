@@ -1,9 +1,10 @@
 (ns com.mjdowney.rendergpt
   (:require [clojure.string :as string]
             [crate.core :as crate]
-            [reagent.dom :as rdom]
             [reagent.core :as r]
-            ["react-multi-select-component" :refer (MultiSelect)]))
+            [reagent.dom :as rdom]
+            ["react-multi-select-component" :refer (MultiSelect)]
+            ["react-highlight$default" :as Highlight]))
 
 ;;; (1) Helpers to scan the page for code blocks in ChatGPT responses, read
 ;;; their source code, and add elements to their title bars.
@@ -108,37 +109,119 @@
                   (reset! selected (mapv #(.-value %) e)))
       :value (mapv #(nth options %) @selected)}]))
 
-(defn code-block-html [{:keys [code type]}]
-  (case type
-    "html" code
-    "javascript" (str "<script>\n" code "\n</script>")
-    "css" (str "<style>\n" code "\n</style>")
+(defn settings-dropdown [option->active option->desc]
+  (let [options (mapv
+                  (fn [[option active]]
+                    {:label (name option)
+                     :desc (get option->desc option "")
+                     :value option
+                     :active active})
+                  @option->active)]
+    [:> MultiSelect
+     {:options         (clj->js options)
+      :overrideStrings #js {:selectSomeItems     "Settings..."
+                            :allItemsAreSelected "Settings..."}
+      :ClearSelectedIcon nil
+      :ItemRenderer    selection-option-renderer
+      :valueRenderer   (fn [_options] "Settings...")
+      :className       "dark"
+      :hasSelectAll    false
+      :disableSearch   true
+      :onChange        (fn [e]
+                         (swap! option->active
+                           (fn [old]
+                             (merge
+                               (update-vals old (fn [_] false))
+                               (zipmap
+                                 (map #(keyword (.-value %)) e)
+                                 (repeat true))))))
+      :value           (filter :active options)}]))
 
-    ; if the code type is unknown, just embed it directly
-    code))
+(def settings-descriptions
+  {:show-source "Show computed source instead of rendering."
+   :order-by-type "Put CSS sources first, then HTML, then JS."})
+
+(def default-settings
+  (atom
+    (-> (zipmap (keys settings-descriptions) (repeat true))
+        (assoc :show-source false))))
+
+(defn watch-and-update-defaults [settings]
+  (add-watch settings :update-defaults
+    (fn [_key _ref _old-state new-state]
+      (reset! default-settings new-state))))
+
+(defn settings-atom []
+  (let [settings (r/atom @default-settings)]
+    (watch-and-update-defaults settings)
+    settings))
+
+(defn code-block-html [{:keys [code type idx]}]
+  (let [prefix (str "<!-- Code block at index " idx " -->\n")]
+    (str prefix
+      (case type
+        "html" code
+        "javascript" (str "<script>\n" code "\n</script>")
+        "css" (str "<style>\n" code "\n</style>")
+
+        ; if the code type is unknown, just embed it directly
+        code))))
+
+(defn build-source [selected all-code-blocks settings]
+  (let [sort-order (fn [{:keys [type]}]
+                     (get {"css" 0 "html" 1 "javascript" 2} type 3))]
+    (as-> selected $
+          (map (fn [idx] (assoc (nth all-code-blocks idx) :idx idx)) $)
+          (if (:order-by-type settings) (sort-by sort-order $) $)
+          (map code-block-html $)
+          (string/join "\n\n" $))))
 
 (defn rendergpt [code-block-idx]
   (let [selected (r/atom [code-block-idx])
-        hover? (r/atom false)]
+        select-tt (r/atom false)
+        settings-tt (r/atom false)
+        settings (settings-atom)]
     (fn [code-block-idx]
-      [:div.p4.overflow-y-auto.font-sans {:style {:min-height "500px"}}
-       [:div {:onMouseOver (fn [_e] (reset! hover? true))
-              :onMouseOut (fn [_e] (reset! hover? false))}
-        [:span.tooltip {:style {:display (if @hover? "block" "none")}}
-         "Select which code blocks from ChatGPT's responses to render."]
-        [sources-dropdown code-block-idx selected]]
+      [:div.p4.overflow-y-auto.font-sans
+       {:style (if (:show-source @settings) {} {:min-height "500px"})}
+       [:div {:style {:background "#343540" :display "flex"}}
+        [:div.dropdown-container
+         {:onMouseOver (fn [_e] (reset! select-tt true))
+          :onMouseOut (fn [_e] (reset! select-tt false))}
+         [:span.tooltip {:style {:display (if @select-tt "block" "none")}}
+          "Select which code blocks from ChatGPT's responses to render."]
+         [sources-dropdown code-block-idx selected]]
+
+        [:div.dropdown-container
+         {:onMouseOver (fn [_e] (reset! settings-tt true))
+          :onMouseOut (fn [_e] (reset! settings-tt false))}
+         [:span.tooltip
+          {:style {:display (if @settings-tt "block" "none")
+                   :transform "translateX(-25%)"}}
+          "Configuration for how to render the code blocks."]
+         [settings-dropdown settings settings-descriptions]]]
+
        ;; TODO: Perhaps this needs to be a type 3 component, and re-initialize
        ;;       completely when sources change.
-       [:iframe
-        {:srcDoc (->> @selected
-                      (map (fn [idx] (code-block-html (nth @all-code-blocks idx))))
-                      (string/join "\n"))
-         :style {:position         "relative"
-                 :width            "100%"
-                 :min-height       "500px"
-                 :border           "1px solid steelblue"
-                 :border-radius    "5px"
-                 :background-color "white"}}]])))
+       (let [settings @settings
+             src (build-source @selected @all-code-blocks settings)]
+         (if (:show-source settings)
+           [:div {:style {:font-size "1.1em"
+                          :font-family "monospace !important"
+                          :padding "20px"}}
+            [:> Highlight {:className "html"} src]
+            [:button.copy-code
+             {:on-click (fn [_e] (js/navigator.clipboard.writeText src))}
+             [:div.checkmark "✓"]
+             "Copy combined code"]]
+           [:iframe
+            {:srcDoc src
+             :style {:position         "relative"
+                     :width            "100%"
+                     :min-height       "500px"
+                     :border           "1px solid steelblue"
+                     :border-radius    "5px"
+                     :background-color "white"}}]))])))
 
 ;;; (3) Vanilla JS to add a button element to each code block which injects the
 ;;; above react component.
