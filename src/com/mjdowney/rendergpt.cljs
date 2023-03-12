@@ -1,5 +1,8 @@
 ;; TODO: Automatically include code blocks from within the same answer
 ;; TODO: Figure out how to make mutation event recompute logic faster
+;; TODO: Keyboard shortcuts
+;; TODO: Handle switching chats (needs to recompute the code blocks)
+;; TODO: Alias js -> javascript
 (ns com.mjdowney.rendergpt
   (:require [clojure.string :as string]
             [crate.core :as crate]
