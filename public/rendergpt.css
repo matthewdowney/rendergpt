@@ -4,12 +4,40 @@
     --rmsc-selected: #1d1915;
     --rmsc-border: #333333;
     --rmsc-gray: #d4d4d9;
+    --rmsc-muted: #97979a;
     --rmsc-bg: #343540;
     font-size: 0.85em;
-    color: #fff;
+    color: rgb(217,217,227);
 }
 
 .rmsc div.dropdown-content {
     padding-top: 0;
     border-top: 1px solid var(--rmsc-gray);
+}
+
+.rmsc label.select-item {
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Make the selection checkbox smaller to match the font */
+.rmsc div.item-renderer > input {
+    width: 0.85em;
+    height: 0.85em;
+}
+
+/* Display the two spans in each dropdown selection on separate lines */
+.rmsc div.code-selection {
+    display: grid;
+}
+
+/* For each code block in the dropdown, also display this span beneath, with
+   a preview of the prompt that the user gave to produce the code block. */
+.rmsc span.code-selection-desc {
+    font-size: 0.75em;
+    color: var(--rmsc-gray);
+    overflow-x: hidden;
+    text-overflow: ellipsis;
 }
