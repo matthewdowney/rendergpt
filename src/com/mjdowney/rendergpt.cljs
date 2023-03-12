@@ -1,3 +1,5 @@
+;; TODO: Automatically include code blocks from within the same answer
+;; TODO: Figure out how to make mutation event recompute logic faster
 (ns com.mjdowney.rendergpt
   (:require [clojure.string :as string]
             [crate.core :as crate]
@@ -169,7 +171,7 @@
 
 (defn build-source [selected all-code-blocks settings]
   (let [sort-order (fn [{:keys [type]}]
-                     (get {"css" 0 "html" 1 "javascript" 2} type 3))]
+                     (get {"css" 0 "html" 1 "html+" 1 "javascript" 2} type 3))]
     (as-> selected $
           (map (fn [idx] (assoc (nth all-code-blocks idx) :idx idx)) $)
           (if (:order-by-type settings) (sort-by sort-order $) $)
@@ -183,7 +185,7 @@
         settings (settings-atom)]
     (fn [code-block-idx]
       [:div.p4.overflow-y-auto.font-sans
-       {:style (if (:show-source @settings) {} {:min-height "500px"})}
+       {:style (if (:show-source @settings) {} {:min-height "300px"})}
        [:div {:style {:background "#343540" :display "flex"}}
         [:div.dropdown-container
          {:onMouseOver (fn [_e] (reset! select-tt true))
@@ -259,13 +261,17 @@
   (let [n-registered (count @all-code-blocks)]
     (doseq [[idx ele] (map-indexed vector (get-gpt-response-code-blocks))]
 
-      (when (>= idx n-registered)
-        (swap! all-code-blocks conj
-          {:code (code-block-source ele)
-           :type (code-block-type ele)
-           :desc (prompt-for-code-block ele)}))
+      (let [attrs {:code (code-block-source ele)
+                   :type (code-block-type ele)
+                   :desc (prompt-for-code-block ele)}]
+        (cond
+          (>= idx n-registered)
+          (swap! all-code-blocks conj attrs)
 
-      (when (= (code-block-type ele) "html")
+          (= idx (dec n-registered))
+          (swap! all-code-blocks assoc idx attrs)))
+
+      (when ({"html" "php"} (code-block-type ele))
         (set-code-block-type! ele "html+")
 
         (let [render-button (crate/html [:button.flex.ml-auto.gap-2 "Render"])
