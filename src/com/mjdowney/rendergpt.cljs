@@ -118,10 +118,15 @@
     code))
 
 (defn rendergpt [code-block-idx]
-  (let [selected (r/atom [code-block-idx])]
+  (let [selected (r/atom [code-block-idx])
+        hover? (r/atom false)]
     (fn [code-block-idx]
       [:div.p4.overflow-y-auto.font-sans {:style {:min-height "500px"}}
-       [sources-dropdown code-block-idx selected]
+       [:div {:onMouseOver (fn [_e] (reset! hover? true))
+              :onMouseOut (fn [_e] (reset! hover? false))}
+        [:span.tooltip {:style {:display (if @hover? "block" "none")}}
+         "Select which code blocks from ChatGPT's responses to render."]
+        [sources-dropdown code-block-idx selected]]
        ;; TODO: Perhaps this needs to be a type 3 component, and re-initialize
        ;;       completely when sources change.
        [:iframe
@@ -139,7 +144,7 @@
 ;;; above react component.
 
 (defn create-rendergpt-ele [parent idx]
-  (let [container (crate/html [:div {:style {:display "none"}}])]
+  (let [container (crate/html [:div.rendergpt {:style {:display "none"}}])]
     (.appendChild parent container)
     (rdom/render [rendergpt idx] container)
     container))

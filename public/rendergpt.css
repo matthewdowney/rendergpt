@@ -1,3 +1,5 @@
+/* React multi select component dropdown to get code blocks to render */
+.rendergpt span.tooltip,
 .rmsc.dark {
     --rmsc-main: #343540;
     --rmsc-hover: #0e0c0a;
@@ -8,6 +10,20 @@
     --rmsc-bg: #343540;
     font-size: 0.85em;
     color: rgb(217,217,227);
+}
+
+/* Tooltip for the dropdown */
+.rendergpt span.tooltip {
+    position: absolute;
+    background-color: var(--rmsc-main);
+    border: 1px solid var(--rmsc-gray);
+    color: white;
+    padding: 5px;
+    font-size: 14px;
+    border-radius: 5px;
+    z-index: 1;
+    margin-top: -2em;
+    margin-left: 0.2em;
 }
 
 .rmsc div.dropdown-content {
