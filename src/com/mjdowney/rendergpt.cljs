@@ -32,7 +32,12 @@
   [code-block-ele]
   (let [chat-parent-sel "flex flex-col items-center text-sm dark:bg-gray-800"
         chat-parent (first (js/document.getElementsByClassName chat-parent-sel))
-        user-msgs (reverse (take-nth 2 (.-children chat-parent)))]
+        user-msgs (->> (.-children chat-parent)
+                       ; filter out the model selection element at the top of
+                       ; the chat area
+                       (remove #(string/starts-with? (.-className %) "flex"))
+                       (take-nth 2)
+                       reverse)]
     (when-let [msg
                (first
                  (drop-while
@@ -78,7 +83,11 @@
                 :tabIndex -1}]
        [:div.code-selection {:style {:display "grid" :padding 0 :margin 0}}
         [:span (:label option)]
-        [:span.code-selection-desc (:desc option)]]])))
+        [:span.code-selection-desc
+         (let [d (:desc option)]
+           (if (> (count d) 500)
+             (str (subs d 0 500) "...")
+             d))]]])))
 
 (defn filter-options
   "Filter the options in a multi-select dropdown for search term inclusion in
