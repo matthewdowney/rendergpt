@@ -1,5 +1,4 @@
 ;; TODO: Figure out how to make mutation event recompute logic faster
-;; TODO: Handle switching chats (needs to recompute the code blocks)
 ;; TODO: Automatically include code blocks from within the same answer
 ;; TODO: Allow changing the language tag
 ;; TODO: Keyboard shortcuts
@@ -274,8 +273,16 @@
 
 (defn on-mutation [mutation-records _observer]
   (js/console.log "Mutation observed" mutation-records)
-  (let [n-registered (count @all-code-blocks)]
-    (doseq [[idx ele] (map-indexed vector (get-gpt-response-code-blocks))]
+  (let [n-registered (count @all-code-blocks)
+        blocks (get-gpt-response-code-blocks)]
+
+    ; Assume the chat window has been changed because the first chat no longer
+    ; matches
+    (when-let [b (first blocks)]
+      (when-not (= (code-block-source b) (:code (first @all-code-blocks)))
+        (reset! all-code-blocks [])))
+
+    (doseq [[idx ele] (map-indexed vector blocks)]
 
       (let [t (string/lower-case (code-block-type ele))
             t (case t
