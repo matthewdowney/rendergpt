@@ -1,4 +1,3 @@
-;; TODO: Figure out how to make mutation event recompute logic faster
 ;; TODO: Automatically include code blocks from within the same answer
 ;; TODO: Allow changing the language tag
 ;; TODO: Keyboard shortcuts
@@ -218,8 +217,6 @@
           "Configuration for how to render the code blocks."]
          [settings-dropdown settings settings-descriptions]]]
 
-       ;; TODO: Perhaps this needs to be a type 3 component, and re-initialize
-       ;;       completely when sources change.
        (let [settings @settings
              src (build-source @selected @all-code-blocks settings)]
          (if (:show-source settings)
@@ -271,8 +268,7 @@
 
         (reset! rendered? (not @rendered?))))))
 
-(defn on-mutation [mutation-records _observer]
-  (js/console.log "Mutation observed" mutation-records)
+(defn on-mutation [_mutation-records _observer]
   (let [n-registered (count @all-code-blocks)
         blocks (get-gpt-response-code-blocks)]
 
@@ -298,7 +294,8 @@
           (>= idx n-registered)
           (swap! all-code-blocks conj attrs)
 
-          (= idx (dec n-registered))
+          ; If the most recent block has changed, update it
+          (and (= idx (dec n-registered)) (not= attrs (peek @all-code-blocks)))
           (swap! all-code-blocks assoc idx attrs))
 
         (when (= t "html")
