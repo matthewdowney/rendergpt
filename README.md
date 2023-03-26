@@ -29,9 +29,10 @@ I also wonder how well it could do a first pass of a less structured
 
 - [x] Render HTML/CSS/JavaScript in an iframe inside the conversation
 - [x] Allow mixing and matching different code blocks from the conversation
-- [ ] Render PlantUML diagrams. I've been copy-and-pasting ChatGPT output into
+- [x] Render PlantUML diagrams. I've been copy-and-pasting ChatGPT output into
   [plantuml.com's web app](http://www.plantuml.com/plantuml/uml/SyfFKj2rKt3CoKnELR1Io4ZDoSa70000)
   and honestly it does a decent job. Certainly useful as a first pass.
+- [ ] Use GPT4 to rewrite this README in the style of Hunter S Thompson.
 - [ ] Sometimes it takes a long time for it to re-stream an entire code block 
   when you've only asked it to make a small modification. It'd be cool if you
   could **instruct it to respond with a git patch**, and then have the extension 

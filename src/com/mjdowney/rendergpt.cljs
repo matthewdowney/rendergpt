@@ -1,5 +1,5 @@
 ;; TODO: Automatically include code blocks from within the same answer
-;; TODO: Allow changing the language tag
+;; TODO: Allow changing the language manually
 ;; TODO: Keyboard shortcuts
 (ns com.mjdowney.rendergpt
   (:require [clojure.string :as string]
@@ -7,7 +7,8 @@
             [reagent.core :as r]
             [reagent.dom :as rdom]
             ["react-multi-select-component" :refer (MultiSelect)]
-            ["react-highlight$default" :as Highlight]))
+            ["plantuml-encoder" :as plantuml-encoder]
+            [re-highlight.core :refer [highlight]]))
 
 ;;; (1) Helpers to scan the page for code blocks in ChatGPT responses, read
 ;;; their source code, and add elements to their title bars.
@@ -185,12 +186,16 @@
 
 (defn build-source [selected all-code-blocks settings]
   (let [sort-order (fn [{:keys [type]}]
-                     (get {"css" 0 "html" 1 "html+" 1 "javascript" 2} type 3))]
-    (as-> selected $
-          (map (fn [idx] (assoc (nth all-code-blocks idx) :idx idx)) $)
-          (if (:order-by-type settings) (sort-by sort-order $) $)
-          (map code-block-html $)
-          (string/join "\n\n" $))))
+                     (get {"css" 0 "html" 1 "html+" 1 "javascript" 2} type 3))
+        blocks (as-> selected $
+                     (map (fn [idx] (assoc (nth all-code-blocks idx) :idx idx)) $)
+                     (if (:order-by-type settings) (sort-by sort-order $) $))]
+    (if (every? #{"plantuml+" "plantuml"} (map :type blocks))
+      [:uml (string/join "\n" (map :code blocks))]
+      [:html
+       (->> blocks
+            (map code-block-html)
+            (string/join "\n\n"))])))
 
 (defn rendergpt [code-block-idx]
   (let [selected (r/atom [code-block-idx])
@@ -218,24 +223,32 @@
          [settings-dropdown settings settings-descriptions]]]
 
        (let [settings @settings
-             src (build-source @selected @all-code-blocks settings)]
+             [src-type src] (build-source @selected @all-code-blocks settings)]
          (if (:show-source settings)
            [:div {:style {:font-size "1.1em"
                           :font-family "monospace !important"
-                          :padding "20px"}}
-            [:> Highlight {:className "html"} src]
+                          :padding "20px"
+                          :min-height "300px"}}
+            [highlight {:language "html"} src]
             [:button.copy-code
              {:on-click (fn [_e] (js/navigator.clipboard.writeText src))}
              [:div.checkmark "✓"]
              "Copy combined code"]]
-           [:iframe
-            {:srcDoc src
-             :style {:position         "relative"
-                     :width            "100%"
-                     :min-height       "500px"
-                     :border           "1px solid steelblue"
-                     :border-radius    "5px"
-                     :background-color "white"}}]))])))
+           (if (= src-type :uml)
+             [:img
+              {:src (str "https://www.plantuml.com/plantuml/img/" (plantuml-encoder/encode src))
+               :style {:width "-webkit-fill-available"
+                       :height "-webkit-fill-available"
+                       :margin 0
+                       :padding 0}}]
+             [:iframe
+              {:srcDoc src
+               :style {:position         "relative"
+                       :width            "100%"
+                       :min-height       "500px"
+                       :border           "1px solid steelblue"
+                       :border-radius    "5px"
+                       :background-color "white"}}])))])))
 
 ;;; (3) Vanilla JS to add a button element to each code block which injects the
 ;;; above react component.
@@ -280,11 +293,12 @@
 
     (doseq [[idx ele] (map-indexed vector blocks)]
 
-      (let [t (string/lower-case (code-block-type ele))
+      (let [t (string/lower-case (or (code-block-type ele) ""))
             t (case t
                 ("html" "php" "svg" "xml") "html"
                 ("js" "javascript") "javascript"
                 ("css" "scss" "sass") "css"
+                ("uml" "plantuml") "plantuml"
                 t)
             attrs {:code (code-block-source ele)
                    :type t
@@ -298,9 +312,8 @@
           (and (= idx (dec n-registered)) (not= attrs (peek @all-code-blocks)))
           (swap! all-code-blocks assoc idx attrs))
 
-        (when (= t "html")
-          (set-code-block-type! ele "html+")
-
+        (when (or (= t "html") (= t "plantuml"))
+          (set-code-block-type! ele (str t "+"))
           (let [render-button (crate/html [:button.flex.ml-auto.gap-2 "Render"])
                 toggle-render (toggle-render-fn ele idx render-button)]
             (.addEventListener render-button "click" toggle-render)
@@ -317,7 +330,7 @@
     (crate/html
       [:link {:rel "stylesheet" :type "text/css" :href href}])))
 
-(defn init []
+(defn ^:export init []
   (inject-stylesheet (js/chrome.runtime.getURL "rendergpt.css"))
   (register-on-mutation on-mutation)
   (js/console.log "injected rendergpt"))

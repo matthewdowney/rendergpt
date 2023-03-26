@@ -1,12 +1,12 @@
 {:paths   ["src"]
  :deps
- {org.clojure/clojure       {:mvn/version "1.11.1"}
-  org.clojure/clojurescript {:mvn/version "1.11.60"}
-  org.clojure/core.async    {:mvn/version "1.6.673"}
-  org.clojure/data.json     {:mvn/version "2.4.0"}
-  crate/crate               {:mvn/version "0.2.5"}
-  reagent/reagent           {:mvn/version "1.1.1"
-                             :exclusions  [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server]}}
+ {org.clojure/clojure        {:mvn/version "1.11.1"}
+  org.clojure/clojurescript  {:mvn/version "1.11.60"}
+  org.clojure/data.json      {:mvn/version "2.4.0"}
+  crate/crate                {:mvn/version "0.2.5"}
+  reagent/reagent            {:mvn/version "1.1.1"
+                              :exclusions  [cljsjs/react cljsjs/react-dom cljsjs/react-dom-server]}
+  superstructor/re-highlight {:mvn/version "2.0.1"}}
 
  :aliases {:shadow {:extra-deps {thheller/shadow-cljs {:mvn/version "2.22.7"}
                                  binaryage/devtools   {:mvn/version "1.0.5"}}}}}
