@@ -24,7 +24,7 @@ matching sources.
 
 ChatGPT does pretty well with structured output. I've had success getting it to
 build diagrams with PlantUML syntax, draw SVGs of varying complexity, and of
-course compose HTMl, CSS, and JavaScript.
+course compose HTML, CSS, and JavaScript.
 
 Writing some interactive JavaScript:
 ![doing some JavaScript stuff](doc/game.gif)
