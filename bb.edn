@@ -1,6 +1,21 @@
 {:tasks
- {dev {:doc      "Launch the dev environment."
-       :requires ([babashka.fs :as fs])
-       :task     (do
-                   (fs/delete-tree "public/js")
-                   (shell "npx shadow-cljs watch :app"))}}}
+ {dev     {:doc      "Launch the dev environment."
+           :requires ([babashka.fs :as fs])
+           :task     (do
+                       (fs/delete-tree "public/js")
+                       (shell "npx shadow-cljs watch :app"))}
+
+  release {:doc      "Compile and release."
+           :requires ([babashka.fs :as fs])
+           :task     (do
+                       (fs/delete-tree "public/js")
+                       (shell "npx shadow-cljs release :app")
+
+                       ; Zip together the compiled sources
+                       (import 'java.time.LocalDateTime)
+                       (import 'java.time.format.DateTimeFormatter)
+                       (let [fmt (java.time.format.DateTimeFormatter/ofPattern "yyyyMMddHHmmss")
+                             target (format "rendergpt.%s.zip" (.format fmt (java.time.LocalDateTime/now)))]
+                         (println "Creating release artifact...")
+                         (fs/zip target "public")
+                         (println "Release artifact generated at:" target)))}}}
