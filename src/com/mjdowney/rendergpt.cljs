@@ -190,7 +190,7 @@
         blocks (as-> selected $
                      (map (fn [idx] (assoc (nth all-code-blocks idx) :idx idx)) $)
                      (if (:order-by-type settings) (sort-by sort-order $) $))]
-    (if (every? #{"plantuml+" "plantuml"} (map :type blocks))
+    (if (and (seq blocks) (every? #{"plantuml+" "plantuml"} (map :type blocks)))
       [:uml (string/join "\n" (map :code blocks))]
       [:html
        (->> blocks
