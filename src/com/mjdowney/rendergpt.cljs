@@ -1,8 +1,8 @@
-;; TODO: Automatically include code blocks from within the same answer
 ;; TODO: Figure out how to make mutation event recompute logic faster
-;; TODO: Keyboard shortcuts
 ;; TODO: Handle switching chats (needs to recompute the code blocks)
-;; TODO: Alias js -> javascript
+;; TODO: Automatically include code blocks from within the same answer
+;; TODO: Allow changing the language tag
+;; TODO: Keyboard shortcuts
 (ns com.mjdowney.rendergpt
   (:require [clojure.string :as string]
             [crate.core :as crate]
@@ -175,8 +175,12 @@
     (str prefix
       (case type
         "html" code
-        "javascript" (str "<script>\n" code "\n</script>")
-        "css" (str "<style>\n" code "\n</style>")
+        "javascript" (if (string/starts-with? (string/trim code) "<script>")
+                       code
+                       (str "<script>\n" code "\n</script>"))
+        "css" (if (string/starts-with? (string/trim code) "<style>")
+                code
+                (str "<style>\n" code "\n</style>"))
 
         ; if the code type is unknown, just embed it directly
         code))))
@@ -273,23 +277,30 @@
   (let [n-registered (count @all-code-blocks)]
     (doseq [[idx ele] (map-indexed vector (get-gpt-response-code-blocks))]
 
-      (let [attrs {:code (code-block-source ele)
-                   :type (code-block-type ele)
+      (let [t (string/lower-case (code-block-type ele))
+            t (case t
+                ("html" "php" "svg" "xml") "html"
+                ("js" "javascript") "javascript"
+                ("css" "scss" "sass") "css"
+                t)
+            attrs {:code (code-block-source ele)
+                   :type t
                    :desc (prompt-for-code-block ele)}]
+
         (cond
           (>= idx n-registered)
           (swap! all-code-blocks conj attrs)
 
           (= idx (dec n-registered))
-          (swap! all-code-blocks assoc idx attrs)))
+          (swap! all-code-blocks assoc idx attrs))
 
-      (when ({"html" "php"} (code-block-type ele))
-        (set-code-block-type! ele "html+")
+        (when (= t "html")
+          (set-code-block-type! ele "html+")
 
-        (let [render-button (crate/html [:button.flex.ml-auto.gap-2 "Render"])
-              toggle-render (toggle-render-fn ele idx render-button)]
-          (.addEventListener render-button "click" toggle-render)
-          (add-to-code-block-title-bar! ele render-button))))))
+          (let [render-button (crate/html [:button.flex.ml-auto.gap-2 "Render"])
+                toggle-render (toggle-render-fn ele idx render-button)]
+            (.addEventListener render-button "click" toggle-render)
+            (add-to-code-block-title-bar! ele render-button)))))))
 
 (defn register-on-mutation [f]
   (let [observer (js/MutationObserver. f)]
