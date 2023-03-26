@@ -11,7 +11,7 @@ Clicking the button renders the HTML in an iframe, and allows selecting other
 code blocks (JavaScript, CSS) from the conversation for inclusion, mixing and 
 matching sources.
 
-![rendering some HTML, CSS, and JavaScript](rendergpt.gif)
+![rendering some HTML, CSS, and JavaScript](doc/rendergpt.gif)
 
 ## Installation
 
@@ -25,6 +25,13 @@ matching sources.
 ChatGPT does pretty well with structured output. I've had success getting it to
 build diagrams with PlantUML syntax, draw SVGs of varying complexity, and of
 course compose HTMl, CSS, and JavaScript.
+
+Writing some interactive JavaScript:
+![doing some JavaScript stuff](doc/game.gif)
+
+Generating a PlantUML diagram from source code:
+![rendering some PlantUML](doc/plantuml.gif)
+
 
 ## Ideas 
 
