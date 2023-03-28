@@ -18,7 +18,7 @@ matching sources.
 1. Go to the releases page, download the latest `rendergpt.*.zip` file, and extract it.
 2. Open Chrome/Brave and navigate to `chrome://extensions`.
 3. Enable "Developer mode" in the top right.
-4. Click "Load unpacked" and select the `public/` directory of this repository.
+4. Click "Load unpacked" and select the zip file's extracted contents.
 
 ## Examples
 
