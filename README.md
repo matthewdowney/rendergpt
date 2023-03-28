@@ -4,7 +4,7 @@ A Chrome extension to render HTML/JavaScript/CSS from ChatGPT into iframes.
 
 **Status**: experimental.
 
-The extension just adds a "render" button to any HTML or PlantUML code blocks in 
+The extension adds a "render" button to any HTML or PlantUML code blocks in 
 a ChatGPT conversation.
 
 Clicking the button renders the HTML in an iframe, and allows selecting other
