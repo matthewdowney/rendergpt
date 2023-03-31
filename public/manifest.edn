@@ -13,7 +13,7 @@
  ; This content script proxies to the main js/rendergpt.js script (which might
  ; further require other js/* scripts, and therefore needs full access in web
  ; accessible resources).
- :permissions              [:scripting]
+ :permissions              []
  :content_scripts          [{:matches ["https://chat.openai.com/*"]
                              :js      ["content_proxy.js"]}]
  :web_accessible_resources [{:matches   ["https://chat.openai.com/*"]
