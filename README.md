@@ -4,7 +4,7 @@ A Chrome extension to render HTML/JavaScript/CSS from ChatGPT into iframes.
 
 **Status**: experimental.
 
-The extension just adds a "render" button to any HTML or PlantUML code blocks in 
+The extension adds a "render" button to any HTML or PlantUML code blocks in 
 a ChatGPT conversation.
 
 Clicking the button renders the HTML in an iframe, and allows selecting other
@@ -18,7 +18,7 @@ matching sources.
 1. Go to the releases page, download the latest `rendergpt.*.zip` file, and extract it.
 2. Open Chrome/Brave and navigate to `chrome://extensions`.
 3. Enable "Developer mode" in the top right.
-4. Click "Load unpacked" and select the `public/` directory of this repository.
+4. Click "Load unpacked" and select the zip file's extracted contents.
 
 ## Examples
 
