@@ -8,7 +8,14 @@
   "dependencies": {
     "create-react-class": "^15.7.0",
     "highlight.js": "11.5.1",
+    "katex": "0.12.0",
+    "markdown-it": "12.3.2",
+    "markdown-it-block-image": "0.0.3",
+    "markdown-it-footnote": "3.0.3",
+    "markdown-it-texmath": "0.9.7",
+    "markdown-it-toc-done-right": "4.2.0",
     "plantuml-encoder": "^1.4.0",
+    "punycode": "2.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-multi-select-component": "^4.3.4"
