@@ -29,7 +29,7 @@
 (defn prompt-for-code-block
   "Given ChatGPT's response code, get the text of the preceding user prompt."
   [code-block-ele]
-  (let [chat-parent-sel "flex flex-col items-center text-sm dark:bg-gray-800"
+  (let [chat-parent-sel "flex flex-col text-sm dark:bg-gray-800"
         chat-parent (first (js/document.getElementsByClassName chat-parent-sel))
         user-msgs (->> (.-children chat-parent)
                        ; filter out the model selection element at the top of
@@ -334,3 +334,10 @@
   (inject-stylesheet (js/chrome.runtime.getURL "rendergpt.css"))
   (register-on-mutation on-mutation)
   (js/console.log "injected rendergpt"))
+
+(comment
+  ; Example prompt:
+  ; Create a clickable, draggable HTML window to float over the DOM with a title
+  ; bar and a close  button, imitating a native window. Make it sleek and
+  ; beautiful, use HTML, CSS, and JavaScript.
+  )
